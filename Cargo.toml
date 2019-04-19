@@ -1,0 +1,7 @@
+[package]
+name = "rust-bc"
+version = "0.1.0"
+authors = ["nirasan <niranirao@gmail.com>"]
+edition = "2018"
+
+[dependencies]
