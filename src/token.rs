@@ -1,5 +1,5 @@
 pub enum Token {
-    Number(float64),
+    Number(f64),
 
     Plus,
     Minus,
