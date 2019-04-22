@@ -1,6 +1,6 @@
 use crate::token::Token;
-use std::iter::Peekable;
 use std::iter::FromIterator;
+use std::iter::Peekable;
 use std::str::Chars;
 
 pub struct Lexer<'a> {
@@ -10,10 +10,7 @@ pub struct Lexer<'a> {
 
 impl<'a> Lexer<'a> {
     pub fn new(iter: Peekable<Chars<'a>>) -> Lexer<'a> {
-        Lexer{
-            iter,
-            curr: None,
-        }
+        Lexer { iter, curr: None }
     }
 
     pub fn token(&mut self) -> Option<Token> {
@@ -45,7 +42,7 @@ impl<'a> Lexer<'a> {
         let t = match curr {
             '+' => Some(Token::Plus),
             '-' => Some(Token::Minus),
-            '*' =>Some( Token::Asterisk),
+            '*' => Some(Token::Asterisk),
             '/' => Some(Token::Slash),
             ';' => Some(Token::SemiColon),
             _ => None,
@@ -95,5 +92,4 @@ impl<'a> Lexer<'a> {
         }
         return false;
     }
-
 }
