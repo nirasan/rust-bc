@@ -1,35 +1,37 @@
 use crate::token::Token;
 use std::iter::FromIterator;
-use std::iter::Peekable;
-use std::str::Chars;
 
-pub struct Lexer<'a> {
-    iter: Peekable<Chars<'a>>,
-    curr: Option<char>,
+pub struct Lexer {
+    input: Vec<char>,
+    position: usize,
 }
 
-impl<'a> Lexer<'a> {
-    pub fn new(iter: Peekable<Chars<'a>>) -> Lexer<'a> {
-        Lexer { iter, curr: None }
+impl Lexer {
+    pub fn new(input: Vec<char>) -> Lexer {
+        Lexer { input, position: 0 }
     }
 
     pub fn token(&mut self) -> Option<Token> {
+        let token = self.get_token();
         self.next();
+        return token;
+    }
 
+    fn get_token(&mut self) -> Option<Token> {
         self.skip_whitespace();
 
-        if self.curr.is_none() {
+        if self.curr().is_none() {
             return Some(Token::Eof);
         }
 
-        let curr = self.curr.unwrap();
+        let curr = *self.curr().unwrap();
 
         // Token::Number
         if curr.is_ascii_digit() {
             let mut number = vec![curr];
             while self.is_peek_digit() {
                 self.next();
-                number.push(self.curr.unwrap());
+                number.push(*self.curr().unwrap());
             }
             let number = String::from_iter(number);
             let number = number.parse::<f64>();
@@ -54,34 +56,32 @@ impl<'a> Lexer<'a> {
     }
 
     fn skip_whitespace(&mut self) {
-        while self.curr.is_some() && self.curr.unwrap().is_whitespace() {
+        while self.curr().is_some() && self.curr().unwrap().is_whitespace() {
             self.next();
         }
     }
 
     pub fn next(&mut self) {
-        let curr = self.iter.next();
-        self.curr = curr;
+        self.position += 1;
     }
 
-    pub fn curr(&self) -> Option<char> {
-        self.curr
+    pub fn curr(&self) -> Option<&char> {
+        self.input.get(self.position)
     }
 
-    pub fn peek(&mut self) -> Option<&char> {
-        self.iter.peek()
+    pub fn peek(&self) -> Option<&char> {
+        self.input.get(self.position + 1)
     }
 
     pub fn is_curr(&self, c: char) -> bool {
-        self.curr.is_some() && self.curr.unwrap() == c
+        self.curr().is_some() && self.curr().unwrap() == &c
     }
 
-    pub fn is_peek(&mut self, c: char) -> bool {
-        let peek = self.peek();
-        peek.is_some() && peek.unwrap() == &c
+    pub fn is_peek(&self, c: char) -> bool {
+        self.peek().is_some() && self.peek().unwrap() == &c
     }
 
-    fn is_peek_digit(&mut self) -> bool {
+    fn is_peek_digit(&self) -> bool {
         let peek = self.peek();
         if peek.is_none() {
             return false;
