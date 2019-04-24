@@ -131,7 +131,7 @@ impl Parser {
 
     pub fn parse_infix_expression(&mut self, left: Rc<ast::Expression>) -> Option<Rc<ast::Expression>> {
         let token = self.curr_token.as_ref()?;
-        let operator = format!("{:?}", token);
+        let operator = format!("{}", token);
         let precedence = Precedence::token_precedence(token);
         self.next_token();
         let right = self.parse_expression(precedence)?;
