@@ -17,7 +17,8 @@ pub fn eval_program(program: Program) -> Vec<Rc<Object>> {
 
 pub fn eval_statement(statement: Rc<Statement>) -> Option<Rc<Object>> {
     match statement.borrow() {
-        Statement::ExpressionStatement {expression} => eval_expression(expression)
+        Statement::ExpressionStatement {expression} => eval_expression(expression),
+        _ => None,
     }
 }
 
@@ -25,6 +26,7 @@ pub fn eval_expression(expression: &Rc<Expression>) -> Option<Rc<Object>> {
     match expression.borrow() {
         Expression::NumberLiteral(n) => Some(Rc::new(Object::Number(*n))),
         Expression::InfixExpression {left, operator, right} => eval_infix_expression(left, operator, right),
+        _ => None,
     }
 }
 

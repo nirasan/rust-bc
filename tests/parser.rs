@@ -23,13 +23,34 @@ fn test_parse_integer_literal() {
 
 #[test]
 fn test_parse_program() {
-    let mut parser = Parser::new(Lexer::new("1 * 2 * 3".chars().collect()));
-    let program = parser.parse_program();
-    println!("{:?}", program);
-    assert_eq!(format!("{:?}", program), r#"Some(Program { statements: [ExpressionStatement { expression: InfixExpression { left: InfixExpression { left: NumberLiteral(1.0), operator: "Asterisk", right: NumberLiteral(2.0) }, operator: "Asterisk", right: NumberLiteral(3.0) } }] })"#);
+    do_parse_program(
+        "1 * 2 * 3",
+        r#"Some(Program { statements: [ExpressionStatement { expression: InfixExpression { left: InfixExpression { left: NumberLiteral(1.0), operator: "*", right: NumberLiteral(2.0) }, operator: "*", right: NumberLiteral(3.0) } }] })"#
+    );
 
-    let mut parser = Parser::new(Lexer::new("1 + 2 * 3".chars().collect()));
+    do_parse_program(
+        "1 + 2 * 3",
+        r#"Some(Program { statements: [ExpressionStatement { expression: InfixExpression { left: NumberLiteral(1.0), operator: "+", right: InfixExpression { left: NumberLiteral(2.0), operator: "*", right: NumberLiteral(3.0) } } }] })"#
+    );
+
+    do_parse_program(
+        "val = 4",
+        r#"Some(Program { statements: [AssignStatement { name: "val", expression: NumberLiteral(4.0) }] })"#
+    );
+
+    do_parse_program(
+        "val + 5 * 6",
+        r#"Some(Program { statements: [ExpressionStatement { expression: InfixExpression { left: Identifier("val"), operator: "+", right: InfixExpression { left: NumberLiteral(5.0), operator: "*", right: NumberLiteral(6.0) } } }] })"#
+    );
+
+    do_parse_program(
+        "1 / (2 + 3)",
+        r#"Some(Program { statements: [ExpressionStatement { expression: InfixExpression { left: NumberLiteral(1.0), operator: "/", right: InfixExpression { left: NumberLiteral(2.0), operator: "+", right: NumberLiteral(3.0) } } }] })"#
+    );
+}
+
+fn do_parse_program(input: &str, expect: &str) {
+    let mut parser = Parser::new(Lexer::new(input.chars().collect()));
     let program = parser.parse_program();
-    println!("{:?}", program);
-    assert_eq!(format!("{:?}", program), r#"Some(Program { statements: [ExpressionStatement { expression: InfixExpression { left: NumberLiteral(1.0), operator: "Plus", right: InfixExpression { left: NumberLiteral(2.0), operator: "Asterisk", right: NumberLiteral(3.0) } } }] })"#);
+    assert_eq!(format!("{:?}", program), expect);
 }

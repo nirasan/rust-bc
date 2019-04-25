@@ -41,12 +41,26 @@ impl Lexer {
             return None;
         }
 
+        // Token::Identifier
+        if curr.is_ascii_alphabetic() {
+            let mut identifier = vec![curr];
+            while self.is_peek_alphabetic() {
+                self.next();
+                identifier.push(*self.curr().unwrap());
+            }
+            let identifier = String::from_iter(identifier);
+            return Some(Token::Identifier(identifier));
+        }
+
         let t = match curr {
             '+' => Some(Token::Plus),
             '-' => Some(Token::Minus),
             '*' => Some(Token::Asterisk),
             '/' => Some(Token::Slash),
             ';' => Some(Token::SemiColon),
+            '(' => Some(Token::LParen),
+            ')' => Some(Token::RParen),
+            '=' => Some(Token::Assign),
             _ => None,
         };
         if let Some(t) = t {
@@ -91,5 +105,13 @@ impl Lexer {
             return true;
         }
         return false;
+    }
+
+    fn is_peek_alphabetic(&self) -> bool {
+        let peek = self.peek();
+        if peek.is_none() {
+            return false;
+        }
+        return peek.unwrap().is_ascii_alphabetic();
     }
 }

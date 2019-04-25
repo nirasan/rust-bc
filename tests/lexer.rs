@@ -34,3 +34,14 @@ fn test_token() {
     assert_eq!(lexer.token(), Some(Token::SemiColon));
     assert_eq!(lexer.token(), Some(Token::Eof));
 }
+
+#[test]
+fn test_assign() {
+    let input = "val = 100";
+    let mut lexer = Lexer::new(input.chars().collect());
+
+    assert_eq!(lexer.token(), Some(Token::Identifier("val".to_string())));
+    assert_eq!(lexer.token(), Some(Token::Assign));
+    assert_eq!(lexer.token(), Some(Token::Number(100_f64)));
+    assert_eq!(lexer.token(), Some(Token::Eof));
+}

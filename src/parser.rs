@@ -1,4 +1,4 @@
-use crate::ast;
+use crate::ast::*;
 use crate::lexer::Lexer;
 use crate::token::Token;
 
@@ -75,7 +75,7 @@ impl Parser {
 
     **/
 
-    pub fn parse_program(&mut self) -> Option<ast::Program> {
+    pub fn parse_program(&mut self) -> Option<Program> {
         let mut statements = vec![];
         while self.curr_token.is_some() && !self.is_curr_token(&Token::Eof) {
             let statement = self.parse_statement();
@@ -84,16 +84,35 @@ impl Parser {
             }
             self.next_token();
         }
-        return Some(ast::Program { statements });
+        return Some(Program { statements });
     }
 
-    fn parse_statement(&mut self) -> Option<Rc<ast::Statement>> {
+    fn parse_statement(&mut self) -> Option<Rc<Statement>> {
+        // AssignStatement
+        if self.curr_token.is_some() && self.curr_token.as_ref().unwrap().is_identifier() && self.is_peek_token(&Token::Assign) {
+            return self.parse_assign_statement();
+        }
+
+        // ExpressionStatement
         let expression = self.parse_expression(Precedence::LOWEST)?;
         self.expect_peek(&Token::SemiColon);
-        return Some(Rc::new(ast::Statement::ExpressionStatement { expression }));
+        return Some(Rc::new(Statement::ExpressionStatement { expression }));
     }
 
-    fn parse_expression(&mut self, precedence: Precedence) -> Option<Rc<ast::Expression>> {
+    fn parse_assign_statement(&mut self) -> Option<Rc<Statement>> {
+        let identifier = self.curr_token.clone().unwrap();
+        self.expect_peek(&Token::Assign);
+        self.next_token();
+        let expression = self.parse_expression(Precedence::LOWEST)?;
+        self.expect_peek(&Token::SemiColon);
+        if let Token::Identifier(name) = identifier {
+            Some(Rc::new(Statement::AssignStatement { name, expression }))
+        } else {
+            None
+        }
+    }
+
+    fn parse_expression(&mut self, precedence: Precedence) -> Option<Rc<Expression>> {
         let mut left = self.parse_prefix()?;
 
         while !self.is_peek_token(&Token::SemiColon) && precedence < self.peek_precedence() {
@@ -104,38 +123,57 @@ impl Parser {
         return Some(left);
     }
 
-    fn parse_prefix(&mut self) -> Option<Rc<ast::Expression>> {
+    fn parse_prefix(&mut self) -> Option<Rc<Expression>> {
         match self.curr_token.as_ref()? {
             Token::Number(_) => self.parse_integer_literal(),
+            Token::Identifier(_) => self.parse_identifier(),
+            Token::LParen => self.parse_grouped_expression(),
             _ => None,
         }
     }
 
-    fn parse_infix(&mut self, left: Rc<ast::Expression>) -> Option<Rc<ast::Expression>> {
+    fn parse_infix(&mut self, left: Rc<Expression>) -> Option<Rc<Expression>> {
         let token = self.curr_token.as_ref()?;
         match token {
             Token::Plus | Token::Minus | Token::Asterisk | Token::Slash => {
                 self.parse_infix_expression(left)
             }
-            _ => None,
+            _ => Some(left),
         }
     }
 
-    pub fn parse_integer_literal(&mut self) -> Option<Rc<ast::Expression>> {
+    pub fn parse_integer_literal(&mut self) -> Option<Rc<Expression>> {
         if let Some(Token::Number(n)) = self.curr_token {
-            Some(Rc::new(ast::Expression::NumberLiteral(n)))
+            Some(Rc::new(Expression::NumberLiteral(n)))
         } else {
             None
         }
     }
 
-    pub fn parse_infix_expression(&mut self, left: Rc<ast::Expression>) -> Option<Rc<ast::Expression>> {
+    pub fn parse_identifier(&mut self) -> Option<Rc<Expression>> {
+        if let Some(Token::Identifier(s)) = self.curr_token.as_ref() {
+            Some(Rc::new(Expression::Identifier(s.to_owned())))
+        } else {
+            None
+        }
+    }
+    
+    pub fn parse_grouped_expression(&mut self) -> Option<Rc<Expression>> {
+        self.next_token();
+        let expression = self.parse_expression(Precedence::LOWEST);
+        if !self.expect_peek(&Token::RParen) {
+            return None;
+        }
+        return expression;
+    }
+
+    pub fn parse_infix_expression(&mut self, left: Rc<Expression>) -> Option<Rc<Expression>> {
         let token = self.curr_token.as_ref()?;
         let operator = format!("{}", token);
         let precedence = Precedence::token_precedence(token);
         self.next_token();
         let right = self.parse_expression(precedence)?;
-        return Some(Rc::new(ast::Expression::InfixExpression {left, operator, right}));
+        return Some(Rc::new(Expression::InfixExpression {left, operator, right}));
     }
 }
 

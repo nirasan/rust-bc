@@ -5,6 +5,7 @@ use std::mem;
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Token {
     Number(f64),
+    Identifier(String),
 
     Plus,
     Minus,
@@ -12,6 +13,11 @@ pub enum Token {
     Slash,
 
     SemiColon,
+
+    Assign,
+
+    LParen,
+    RParen,
 
     Eof,
     Illegal,
@@ -27,7 +33,11 @@ impl fmt::Display for Token {
             Token::Asterisk => write!(f, "*"),
             Token::Slash => write!(f, "/"),
             Token::SemiColon => write!(f, ";"),
+            Token::LParen => write!(f, "("),
+            Token::RParen => write!(f, ")"),
+            Token::Assign => write!(f, "="),
             Token::Number(n) => write!(f, "Number({})", n),
+            Token::Identifier(s) => write!(f, "Identifier({})", s),
         }
     }
 }
@@ -35,5 +45,9 @@ impl fmt::Display for Token {
 impl Token {
     pub fn is_same(&self, other: &Token) -> bool {
         mem::discriminant(self) == mem::discriminant(other)
+    }
+
+    pub fn is_identifier(&self) -> bool {
+        self.is_same(&Token::Identifier(String::new()))
     }
 }
