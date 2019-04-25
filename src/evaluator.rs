@@ -1,13 +1,14 @@
 use crate::ast::*;
 use crate::object::Object;
+use crate::environment::Environment;
 
 use std::rc::Rc;
 use core::borrow::Borrow;
 
-pub fn eval_program(program: Program) -> Vec<Rc<Object>> {
+pub fn eval_program(program: Program, env: &mut Environment) -> Vec<Rc<Object>> {
     let mut results = vec![];
     for statement in program.statements {
-        let result = eval_statement(statement);
+        let result = eval_statement(statement, env);
         if let Some(result) = result {
             results.push(result);
         }
@@ -15,24 +16,31 @@ pub fn eval_program(program: Program) -> Vec<Rc<Object>> {
     return results;
 }
 
-pub fn eval_statement(statement: Rc<Statement>) -> Option<Rc<Object>> {
+pub fn eval_statement(statement: Rc<Statement>, env: &mut Environment) -> Option<Rc<Object>> {
     match statement.borrow() {
-        Statement::ExpressionStatement {expression} => eval_expression(expression),
-        _ => None,
+        Statement::ExpressionStatement {expression} => eval_expression(expression, env),
+        Statement::AssignStatement {name, expression} => eval_assign_statement(name.to_owned(), expression, env),
     }
 }
 
-pub fn eval_expression(expression: &Rc<Expression>) -> Option<Rc<Object>> {
+pub fn eval_assign_statement(name: String, expression: &Rc<Expression>, env: &mut Environment) -> Option<Rc<Object>> {
+    let value = eval_expression(expression, env)?;
+    env.set(name, value);
+    return Some(Rc::new(Object::Empty));
+}
+
+pub fn eval_expression(expression: &Rc<Expression>, env: &mut Environment) -> Option<Rc<Object>> {
     match expression.borrow() {
         Expression::NumberLiteral(n) => Some(Rc::new(Object::Number(*n))),
-        Expression::InfixExpression {left, operator, right} => eval_infix_expression(left, operator, right),
+        Expression::Identifier(s) => eval_identifier(s, env),
+        Expression::InfixExpression {left, operator, right} => eval_infix_expression(left, operator, right, env),
         _ => None,
     }
 }
 
-pub fn eval_infix_expression(left: &Rc<Expression>, operator: &str, right: &Rc<Expression>) -> Option<Rc<Object>> {
-    let left = eval_expression(left)?;
-    let right = eval_expression(right)?;
+pub fn eval_infix_expression(left: &Rc<Expression>, operator: &str, right: &Rc<Expression>, env: &mut Environment) -> Option<Rc<Object>> {
+    let left = eval_expression(left, env)?;
+    let right = eval_expression(right, env)?;
 
     if let &Object::Number(left) = left.borrow() {
         if let &Object::Number(right) = right.borrow() {
@@ -47,5 +55,9 @@ pub fn eval_infix_expression(left: &Rc<Expression>, operator: &str, right: &Rc<E
     }
 
     return None;
+}
+
+pub fn eval_identifier(name: &String, env: &mut Environment) -> Option<Rc<Object>> {
+    env.get(name)
 }
 

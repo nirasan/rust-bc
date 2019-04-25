@@ -4,3 +4,4 @@ pub mod parser;
 pub mod token;
 pub mod object;
 pub mod evaluator;
+pub mod environment;
