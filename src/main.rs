@@ -1,5 +1,32 @@
 use core::borrow::Borrow;
+use std::io::{self, Write};
 use std::mem;
+
+fn main() {
+    loop {
+        print!(">> ");
+        io::stdout().flush().unwrap();
+
+        let mut code = String::new();
+        io::stdin()
+            .read_line(&mut code)
+            .ok()
+            .expect("failed to read line");
+
+        if code == "exit\n" {
+            break;
+        }
+
+        let lexer = Lexer::new(code.chars().collect());
+        let mut parser = Parser::new(lexer);
+
+        let expr = parser.parse(Precedence::LOWEST);
+
+        if let Some(expr) = expr {
+            println!("{}", eval(expr.borrow()));
+        }
+    }
+}
 
 #[derive(Debug, PartialEq, Clone)]
 enum Token {
@@ -207,6 +234,7 @@ fn test_parser() {
              r#"Some(InfixExpr { left: PrefixExpr { operator: "Minus", right: Number(1.0) }, operator: "Plus", right: InfixExpr { left: Number(2.0), operator: "Asterisk", right: Number(3.0) } })"#);
 }
 
+#[cfg(test)]
 fn do_parser(input: &str, expect: &str) {
     let lexer = Lexer::new(input.chars().collect());
     let mut parser = Parser::new(lexer);
@@ -242,6 +270,7 @@ fn test_eval() {
     do_eval("1 + (2 + 3) * -(3 / 3)", -4_f64);
 }
 
+#[cfg(test)]
 fn do_eval(input: &str, expect: f64) {
     let lexer = Lexer::new(input.chars().collect());
     let mut parser = Parser::new(lexer);
