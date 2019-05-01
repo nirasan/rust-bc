@@ -1,6 +1,6 @@
 use std::fmt;
-use std::str::FromStr;
 use std::mem;
+use std::str::FromStr;
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Token {

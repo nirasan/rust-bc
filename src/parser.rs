@@ -89,7 +89,10 @@ impl Parser {
 
     fn parse_statement(&mut self) -> Option<Rc<Statement>> {
         // AssignStatement
-        if self.curr_token.is_some() && self.curr_token.as_ref().unwrap().is_identifier() && self.is_peek_token(&Token::Assign) {
+        if self.curr_token.is_some()
+            && self.curr_token.as_ref().unwrap().is_identifier()
+            && self.is_peek_token(&Token::Assign)
+        {
             return self.parse_assign_statement();
         }
 
@@ -157,7 +160,7 @@ impl Parser {
             None
         }
     }
-    
+
     pub fn parse_grouped_expression(&mut self) -> Option<Rc<Expression>> {
         self.next_token();
         let expression = self.parse_expression(Precedence::LOWEST);
@@ -173,7 +176,11 @@ impl Parser {
         let precedence = Precedence::token_precedence(token);
         self.next_token();
         let right = self.parse_expression(precedence)?;
-        return Some(Rc::new(Expression::InfixExpression {left, operator, right}));
+        return Some(Rc::new(Expression::InfixExpression {
+            left,
+            operator,
+            right,
+        }));
     }
 }
 

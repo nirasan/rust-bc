@@ -4,13 +4,13 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 pub struct Environment {
-    store: HashMap<String, Rc<Object>>
+    store: HashMap<String, Rc<Object>>,
 }
 
 impl Environment {
     pub fn new() -> Environment {
-        Environment{
-            store: HashMap::new()
+        Environment {
+            store: HashMap::new(),
         }
     }
 

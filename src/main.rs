@@ -14,15 +14,12 @@ enum Token {
 
 struct Lexer {
     input: Vec<char>,
-    position: usize
+    position: usize,
 }
 
 impl Lexer {
     fn new(input: Vec<char>) -> Lexer {
-        Lexer{
-            input,
-            position: 0
-        }
+        Lexer { input, position: 0 }
     }
     fn token(&mut self) -> Option<Token> {
         use std::iter::FromIterator;
@@ -36,7 +33,10 @@ impl Lexer {
                 self.next();
                 number.push(*self.curr().unwrap());
             }
-            String::from_iter(number).parse::<f64>().ok().and_then(|n| Some(Token::Number(n)))
+            String::from_iter(number)
+                .parse::<f64>()
+                .ok()
+                .and_then(|n| Some(Token::Number(n)))
         } else {
             match curr {
                 &'+' => Some(Token::Plus),
@@ -77,8 +77,15 @@ fn test_lexer() {
 #[derive(Debug)]
 enum Expr {
     Number(f64),
-    PrefixExpr{operator: String, right: Box<Expr>},
-    InfixExpr{left: Box<Expr>, operator: String, right: Box<Expr>},
+    PrefixExpr {
+        operator: String,
+        right: Box<Expr>,
+    },
+    InfixExpr {
+        left: Box<Expr>,
+        operator: String,
+        right: Box<Expr>,
+    },
 }
 
 #[derive(PartialOrd, PartialEq)]
@@ -99,11 +106,7 @@ impl Parser {
     fn new(mut lexer: Lexer) -> Parser {
         let curr = lexer.token();
         let peek = lexer.token();
-        Parser {
-            lexer,
-            curr,
-            peek,
-        }
+        Parser { lexer, curr, peek }
     }
     fn parse(&mut self, precedence: Precedence) -> Option<Box<Expr>> {
         let mut left = self.parse_prefix()?;
@@ -126,7 +129,10 @@ impl Parser {
     pub fn parse_minus(&mut self) -> Option<Box<Expr>> {
         self.next();
         let number = self.parse(Precedence::PREFIX)?;
-        return Some(Box::new(Expr::PrefixExpr {operator: "Minus".to_string(), right: number}));
+        return Some(Box::new(Expr::PrefixExpr {
+            operator: "Minus".to_string(),
+            right: number,
+        }));
     }
     pub fn parse_number(&mut self) -> Option<Box<Expr>> {
         match self.curr.borrow() {
@@ -159,7 +165,11 @@ impl Parser {
         let precedence = Self::token_precedence(token);
         self.next();
         let right = self.parse(precedence)?;
-        return Some(Box::new(Expr::InfixExpr {left, operator, right}));
+        return Some(Box::new(Expr::InfixExpr {
+            left,
+            operator,
+            right,
+        }));
     }
     fn next(&mut self) {
         self.curr = self.peek.clone();
@@ -189,8 +199,10 @@ impl Parser {
 
 #[test]
 fn test_parser() {
-    do_parser("1 + 2",
-        r#"Some(InfixExpr { left: Number(1.0), operator: "Plus", right: Number(2.0) })"#);
+    do_parser(
+        "1 + 2",
+        r#"Some(InfixExpr { left: Number(1.0), operator: "Plus", right: Number(2.0) })"#,
+    );
     do_parser("- 1 + 2 * 3",
              r#"Some(InfixExpr { left: PrefixExpr { operator: "Minus", right: Number(1.0) }, operator: "Plus", right: InfixExpr { left: Number(2.0), operator: "Asterisk", right: Number(3.0) } })"#);
 }
@@ -204,8 +216,12 @@ fn do_parser(input: &str, expect: &str) {
 fn eval(expr: &Expr) -> f64 {
     match expr {
         Expr::Number(n) => *n,
-        Expr::PrefixExpr {operator: _, right} => { - eval(right) },
-        Expr::InfixExpr {left, operator, right} => {
+        Expr::PrefixExpr { operator: _, right } => -eval(right),
+        Expr::InfixExpr {
+            left,
+            operator,
+            right,
+        } => {
             let left = eval(left);
             let right = eval(right);
             match operator.as_str() {
@@ -215,7 +231,7 @@ fn eval(expr: &Expr) -> f64 {
                 "Slash" => left / right,
                 _ => panic!("invalid operator"),
             }
-        },
+        }
     }
 }
 

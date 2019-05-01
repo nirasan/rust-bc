@@ -1,11 +1,11 @@
 extern crate rust_bc;
 
-use rust_bc::lexer::Lexer;
-use rust_bc::parser::Parser;
-use rust_bc::evaluator::*;
-use rust_bc::object::Object;
-use rust_bc::environment::Environment;
 use core::borrow::Borrow;
+use rust_bc::environment::Environment;
+use rust_bc::evaluator::*;
+use rust_bc::lexer::Lexer;
+use rust_bc::object::Object;
+use rust_bc::parser::Parser;
 use std::rc::Rc;
 
 #[test]
