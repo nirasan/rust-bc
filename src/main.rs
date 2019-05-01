@@ -1,5 +1,4 @@
 use core::borrow::Borrow;
-use rust_bc::ast::Statement::ExpressionStatement;
 use std::mem;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -126,7 +125,7 @@ impl Parser {
     }
     pub fn parse_minus(&mut self) -> Option<Box<Expr>> {
         self.next();
-        let number = self.parse_number()?;
+        let number = self.parse(Precedence::PREFIX)?;
         return Some(Box::new(Expr::PrefixExpr {operator: "Minus".to_string(), right: number}));
     }
     pub fn parse_number(&mut self) -> Option<Box<Expr>> {
@@ -197,7 +196,39 @@ fn test_parser() {
 }
 
 fn do_parser(input: &str, expect: &str) {
-    let mut lexer = Lexer::new(input.chars().collect());
+    let lexer = Lexer::new(input.chars().collect());
     let mut parser = Parser::new(lexer);
     assert_eq!(format!("{:?}", parser.parse(Precedence::LOWEST)), expect);
+}
+
+fn eval(expr: &Expr) -> f64 {
+    match expr {
+        Expr::Number(n) => *n,
+        Expr::PrefixExpr {operator: _, right} => { - eval(right) },
+        Expr::InfixExpr {left, operator, right} => {
+            let left = eval(left);
+            let right = eval(right);
+            match operator.as_str() {
+                "Plus" => left + right,
+                "Minus" => left - right,
+                "Asterisk" => left * right,
+                "Slash" => left / right,
+                _ => panic!("invalid operator"),
+            }
+        },
+    }
+}
+
+#[test]
+fn test_eval() {
+    do_eval("1 + 2", 3_f64);
+    do_eval("1 + 2 * 3", 7_f64);
+    do_eval("1 + (2 + 3) * -(3 / 3)", -4_f64);
+}
+
+fn do_eval(input: &str, expect: f64) {
+    let lexer = Lexer::new(input.chars().collect());
+    let mut parser = Parser::new(lexer);
+    let result = eval(parser.parse(Precedence::LOWEST).unwrap().borrow());
+    assert_eq!(result, expect);
 }
