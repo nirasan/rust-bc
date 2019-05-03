@@ -20,7 +20,7 @@ fn main() {
         let lexer = Lexer::new(code.chars().collect());
         let mut parser = Parser::new(lexer);
 
-        let expr = parser.parse(Precedence::LOWEST);
+        let expr = parser.parse();
 
         if let Some(expr) = expr {
             println!("{}", eval(expr.borrow()));
@@ -40,21 +40,28 @@ enum Token {
 }
 
 struct Lexer {
+    // 入力された文字列
     input: Vec<char>,
+    // 文字列の解析中のインデックス
     position: usize,
 }
 
 impl Lexer {
+    // 初期化
     fn new(input: Vec<char>) -> Lexer {
         Lexer { input, position: 0 }
     }
+    // 現在解析中の文字を字句として取得し、インデックスを一つ進める
     fn token(&mut self) -> Option<Token> {
         use std::iter::FromIterator;
+        // 空白をスキップする
         while self.curr().is_some() && self.curr().unwrap().is_whitespace() {
             self.next();
         }
+        // 現在解析中の文字を取得して字句に変換する
         let curr = self.curr()?;
         let token = if Self::is_number(curr) {
+            // 数字の場合
             let mut number = vec![*curr];
             while self.peek().is_some() && Self::is_number(self.peek().unwrap()) {
                 self.next();
@@ -65,6 +72,7 @@ impl Lexer {
                 .ok()
                 .and_then(|n| Some(Token::Number(n)))
         } else {
+            // 数字以外の場合
             match curr {
                 &'+' => Some(Token::Plus),
                 &'-' => Some(Token::Minus),
@@ -78,15 +86,19 @@ impl Lexer {
         self.next();
         return token;
     }
+    // 入力された文字列の解析するインデックスをひとつ進める
     fn next(&mut self) {
         self.position += 1;
     }
+    // 現在解析中の文字
     fn curr(&mut self) -> Option<&char> {
         self.input.get(self.position)
     }
+    // 次に解析する文字
     fn peek(&mut self) -> Option<&char> {
         self.input.get(self.position + 1)
     }
+    // 文字が数字であるかどうか
     fn is_number(c: &char) -> bool {
         c.is_ascii_digit() || c == &'.'
     }
@@ -103,11 +115,18 @@ fn test_lexer() {
 
 #[derive(Debug)]
 enum Expr {
+    // 数字
     Number(f64),
+    // 前置演算子式
+    // 式の前に演算子のついた式
+    // 例）"-10", "-(1 + 2)"
     PrefixExpr {
         operator: String,
         right: Box<Expr>,
     },
+    // 中置演算子式
+    // 式と式の間に演算子のある式
+    // 例）"1 + 2", "3 * (4 + 5 + 6)"
     InfixExpr {
         left: Box<Expr>,
         operator: String,
@@ -124,8 +143,11 @@ enum Precedence {
 }
 
 struct Parser {
+    // 字句解析器
     lexer: Lexer,
+    // 現在解析中の字句
     curr: Option<Token>,
+    // 次に解析する字句
     peek: Option<Token>,
 }
 
@@ -135,7 +157,10 @@ impl Parser {
         let peek = lexer.token();
         Parser { lexer, curr, peek }
     }
-    fn parse(&mut self, precedence: Precedence) -> Option<Box<Expr>> {
+    fn parse(&mut self) -> Option<Box<Expr>> {
+        self.parse_expression(Precedence::LOWEST)
+    }
+    fn parse_expression(&mut self, precedence: Precedence) -> Option<Box<Expr>> {
         let mut left = self.parse_prefix()?;
 
         while self.peek.is_some() && precedence < self.peek_precedence() {
@@ -153,24 +178,24 @@ impl Parser {
             _ => None,
         }
     }
-    pub fn parse_minus(&mut self) -> Option<Box<Expr>> {
+    fn parse_minus(&mut self) -> Option<Box<Expr>> {
         self.next();
-        let number = self.parse(Precedence::PREFIX)?;
+        let number = self.parse_expression(Precedence::PREFIX)?;
         return Some(Box::new(Expr::PrefixExpr {
             operator: "Minus".to_string(),
             right: number,
         }));
     }
-    pub fn parse_number(&mut self) -> Option<Box<Expr>> {
+    fn parse_number(&mut self) -> Option<Box<Expr>> {
         match self.curr.borrow() {
             Some(Token::Number(n)) => Some(Box::new(Expr::Number(*n))),
             _ => None,
         }
     }
-    pub fn parse_grouped_expression(&mut self) -> Option<Box<Expr>> {
+    fn parse_grouped_expression(&mut self) -> Option<Box<Expr>> {
         self.next();
-        let expression = self.parse(Precedence::LOWEST);
-        if self.peek_is(&Token::RParen) {
+        let expression = self.parse_expression(Precedence::LOWEST);
+        if self.is_peek(&Token::RParen) {
             self.next();
             return expression;
         } else {
@@ -186,12 +211,12 @@ impl Parser {
             _ => Some(left),
         }
     }
-    pub fn parse_infix_expression(&mut self, left: Box<Expr>) -> Option<Box<Expr>> {
+    fn parse_infix_expression(&mut self, left: Box<Expr>) -> Option<Box<Expr>> {
         let token = self.curr.as_ref()?;
         let operator = format!("{:?}", token);
         let precedence = Self::token_precedence(token);
         self.next();
-        let right = self.parse(precedence)?;
+        let right = self.parse_expression(precedence)?;
         return Some(Box::new(Expr::InfixExpr {
             left,
             operator,
@@ -202,7 +227,7 @@ impl Parser {
         self.curr = self.peek.clone();
         self.peek = self.lexer.token();
     }
-    fn peek_is(&self, token: &Token) -> bool {
+    fn is_peek(&self, token: &Token) -> bool {
         if self.peek.is_none() {
             return false;
         }
@@ -238,7 +263,7 @@ fn test_parser() {
 fn do_parser(input: &str, expect: &str) {
     let lexer = Lexer::new(input.chars().collect());
     let mut parser = Parser::new(lexer);
-    assert_eq!(format!("{:?}", parser.parse(Precedence::LOWEST)), expect);
+    assert_eq!(format!("{:?}", parser.parse()), expect);
 }
 
 fn eval(expr: &Expr) -> f64 {
@@ -274,6 +299,6 @@ fn test_eval() {
 fn do_eval(input: &str, expect: f64) {
     let lexer = Lexer::new(input.chars().collect());
     let mut parser = Parser::new(lexer);
-    let result = eval(parser.parse(Precedence::LOWEST).unwrap().borrow());
+    let result = eval(parser.parse().unwrap().borrow());
     assert_eq!(result, expect);
 }
